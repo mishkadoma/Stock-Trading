@@ -33,7 +33,7 @@ db = SQL("sqlite:///finance.db")
 @app.route("/")
 @login_required
 def index():
-    return apology("TODO")
+    return apology("index")
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
@@ -68,6 +68,7 @@ def login():
         # query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
                           username=request.form.get("username"))
+        print(rows)
 
         # ensure username exists and password is correct
         if len(rows) != 1 or not pwd_context.verify(request.form.get("password"),
@@ -103,7 +104,34 @@ def quote():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Register user."""
-    return apology("TODO")
+    if request.method == "POST":
+        if not request.form.get("username"):
+            return apology("You must provide a username")
+
+        existing_username = db.execute("SELECT * FROM users WHERE username = :username",
+                                        username=request.form.get("username"))
+
+        if existing_username:
+            return apology("Username already exist. Provide another one!")
+
+        if request.form.get("password") == "":
+            return apology("You must provide us a password")
+
+        if request.form.get("password") != request.form.get("re_password"):
+            return apology("Passwords are not match")
+
+        db.execute("INSERT INTO users(username, hash) VALUES (:username, :hash)",
+                    username=request.form.get("username"),
+                    hash=pwd_context.hash(request.form.get("password")))
+
+        rows = db.execute("SELECT * FROM users WHERE username = :username",
+                          username=request.form.get("username"))
+
+        session["user_id"] = rows[0]["id"]
+        return redirect(url_for("index"))
+
+    else:
+        return render_template("register.html")
 
 @app.route("/sell", methods=["GET", "POST"])
 @login_required
