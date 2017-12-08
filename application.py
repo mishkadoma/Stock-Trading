@@ -40,9 +40,28 @@ def index():
 def buy():
     """Buy shares of stock."""
     if request.method == "POST":
-        if request.form.get("symbol") and lookup(request.form.get("symbol")):
+        stock = lookup(request.form.get("symbol"))
+        if request.form.get("symbol") and lookup:
+            try:
+                shares = int(request.form.get("shares"))
+            except ValueError:
+                return apology("Enter valid stocks amount")
+
+            if shares <= 0:
+                return apology("You can buy only positive amount of stocks")
+        else:
             return apology("ERROR")
 
+        cash_needed = round(stock["price"]) * int(request.form.get("shares"))
+
+        user_cash = db.execute("SELECT cash FROM users WHERE id = :id",
+                                id=session["user_id"])
+        if user_cash[0]["cash"] < cash_needed:
+            return apology("You don't have enough cash for this operation")
+
+        # db.execute("UPDATE users SET cash = :total_cash WHERE id = :id",
+        #             total_cash = user_cash - cash_needed,
+        #             id=session["user_id"])
 
     return render_template("buy.html")
 
